@@ -351,6 +351,28 @@ Fidelius 初始化步骤如下：
 
     - `contract_address` 设置为 `YZDataRequest` 的合约地址，该合约由步骤 9 生成。
 
+
+    ```python
+    from web3.auto import w3
+    submitter_passwd = '1234567890'
+    provider_private_key = $provider_private_key
+    w3.eth.account.encrypt(provider_private_key,submitter_passwd)
+    ```
+
+    - 其中 `provider_private_key` 是数据提供者以太坊账户的私钥。
+    - 上述命令会生成一个 `json` 格式的字符串，我们将产生的结果以存储为 `json` 文件并以其中 `address` 字段的值命名。
+    - 将上述文件存储在 `YeeZ-Privacy-Computing/toolkit/blockchain/ethereum/transaction/offline/keystore` 目录下
+
+    
+
+12. （数据提供方）对配置文件 `$PATH_TO_YEEZ_PRIVACY_COMPUTING/toolkit/blockchain/ethereum/transaction/config/YZDataRequest.json` 中的 `$keystore_path`，`$sender` 和 `$contract_address` 进行修改。其中：
+
+    - `$keystore_path` 是在步骤 11 中由 `$SUBMITTER_PASSWD` 加密私钥得到的以太坊密钥库路径。
+
+    - `$sender` 设置为数据使用方的以太坊账户地址。
+
+    - `contract_address` 设置为 `YZDataRequest` 的合约地址，该合约由步骤 9 生成。
+
       
 
 13. （数据提供方）启动监听进程，该进程会从区块链网络中获取数据使用方发送的数据分析需求。
@@ -385,13 +407,13 @@ Fidelius 初始化步骤如下：
 
    下面介绍数据使用方如何根据数据提供方的数据信息发起数据分析请求。  
    
-### 数据使用方
+### 数据使用方   
 
-1. （数据使用方）生成自身的公私钥对，该步骤参考第 5 步骤。
+1. （数据使用方）生成自身的公私钥对，该步骤参考 `Fidelius` 初始化第 5 步骤。
 
    
 
-2. （数据使用方）将公钥注册到 `CertifiedUsers` 智能合约中，参考第 6 步骤。
+2. （数据使用方）将公钥注册到 `CertifiedUsers` 智能合约中，该步骤参考 `Fidelius` 初始化第 6 步骤。
 
    
 
@@ -469,8 +491,8 @@ Fidelius 初始化步骤如下：
     ```
 
 - 智能合约 `YZDataRequest` 由步骤 9 生成。
-- `secret`/`input`/`forward_sig` 由步骤 18 中生成的文件 `params.json` 中的 `$encrypted-skey`/`encrypted-input`/`forward-sig` 指定。
-- `program_hash` 由步骤 16 中的交易日志中 `Data` 的 `hash` 字段。
+- `secret`/`input`/`forward_sig` 由步骤 7 中生成的文件 `params.json` 中的 `$encrypted-skey`/`encrypted-input`/`forward-sig` 指定。
+- `program_hash` 由步骤 5 中的交易日志中 `Data` 的 `hash` 字段。
 
 
 
