@@ -257,7 +257,7 @@ Fidelius 初始化步骤如下：
 
 - 数据使用方从 `YZDataRequest` 获取加密的执行结果，随后解密得到分析结果的明文数据。
 
-  **注意1：** 在第 7 步开始进行，必须保证前述的 6 个步骤正确完成。
+  **注意1：** 数据提供方从第 7 步开始进行，因此必须保证前述的 6 个步骤正确完成。
 
   **注意2：** 如无路径说明，示例中命令默认在 `YeeZ-Privacy-Computing/bin` 目录下执行。
 
@@ -268,8 +268,8 @@ Fidelius 初始化步骤如下：
    ```shell
    $ ./data_provider --data-url ./iris.data --sealed-data-url ./iris.data.sealed --sealer-path ../lib/edatahub.signed.so --plugin-path ../lib/libiris_reader.so --output sealed.output
    ```
-
-
+   
+   
 
 8. （数据提供方）将 `iris data` 的相关信息注册到其数据库 `ypcd` 中。
 
@@ -326,65 +326,93 @@ Fidelius 初始化步骤如下：
 
 10. （数据提供方）将 `YZData` 和 `YZDataRequest` 两个合约的地址拷贝到 `YeeZ-Privacy-Computing/toolkit/blockchain/ethereum/common/const.py` 文件中的 `$contract_YZData` 和 `$contract_YZDataRequest` 中。
 
+    
 
+11. （数据提供方）生成 `keystore` 文件。在 `python3` 交互命令行中执行如下命令：
 
-11. （数据提供方）启动监听进程，该进程会从区块链网络中获取数据使用方发送的数据分析需求。
+    ```python
+    from web3.auto import w3
+    submitter_passwd = '1234567890'
+    provider_private_key = $provider_private_key
+    w3.eth.account.encrypt(provider_private_key,submitter_passwd)
+    ```
 
+    - 其中 `provider_private_key` 是数据提供者以太坊账户的私钥。
+    - 上述命令会生成一个 `json` 格式的字符串，我们将产生的结果以存储为 `json` 文件并以其中 `address` 字段的值命名。
+    - 将上述文件存储在 `YeeZ-Privacy-Computing/toolkit/blockchain/ethereum/transaction/offline/keystore` 目录下
+
+    
+
+12. （数据提供方）对配置文件 `$PATH_TO_YEEZ_PRIVACY_COMPUTING/toolkit/blockchain/ethereum/transaction/config/YZDataRequest.json` 中的 `$keystore_path`，`$sender` 和 `$contract_address` 进行修改。其中：
+
+    - `$keystore_path` 是在步骤 11 中由 `$SUBMITTER_PASSWD` 加密私钥得到的以太坊密钥库路径。
+
+    - `$sender` 设置为数据使用方的以太坊账户地址。
+
+    - `contract_address` 设置为 `YZDataRequest` 的合约地址，该合约由步骤 9 生成。
+
+      
+
+13. （数据提供方）启动监听进程，该进程会从区块链网络中获取数据使用方发送的数据分析需求。
     ```shell
     $ cd $PATH_TO_YEEZ_PRIVACY_COMPUTING/toolkit/blockchain/ethereum/
     $ pip3 install -r requirements.txt
     $ export MYSQL_URL=$MYSQL_URL MYSQL_USERNAME=$MYSQL_USERNAME MYSQL_PASSWORD=$MYSQL_PASSWORD YPCD_DB=$YPCD_DB
-    $ export YPC_HOME=$PATH_TO_YEEZ_PRIVACY_COMPUTING SUBMITTER_PASSWD=$SUBMITTER_PASSWD
+    $ export YPC_HOME=$PATH_TO_YEEZ_PRIVACY_COMPUTING SUBMITTER_PASSWD=1234567890
     $ cd $PATH_TO_YEEZ_PRIVACY_COMPUTING/toolkit/blockchain/ethereum/common
     $ python3 db_tables.py
     $ cd $PATH_TO_YEEZ_PRIVACY_COMPUTING/toolkit/blockchain/ethereum/
     $ python3 daemon.py --host $HOST --project_id $PROJECT_ID
     ```
 
-    - `$PATH_TO_YEEZ_PRIVACY_COMPUTING` 是 `YeeZ-Privacy-Computing` 所在的路径。
-    - `$MYSQL_URL`/`$MYSQL_USERNAME`/`$MYSQL_PASSWORD`/`$YPCD_DB` 需要用户替换为自己的值。
-    - `$MYSQL_URL` 通常情况下指定为`127.0.0.1:3306`，`$YPCD_DB` 设置为 `ypcd`。
-    - `$SUBMITTER_PASSWD` 为解密 `Keystore` 的密码。
-    - `$HOST` 代表以太坊网络名称，设置为 `ropsten`。
-    - `$PROJECT_ID` 由 [Infura](https://infura.io/) 提供。可以在 [Infura](https://infura.io/) 注册一个账户，随后在账户中创建一个以太坊项目即可获得 `$PROJECT_ID`。
-    - 执行 `daemon.py` 文件时确保 `python3` 环境已经安装 `hexbytes`、`ethereum` 和 `web3` 包。
+- `$PATH_TO_YEEZ_PRIVACY_COMPUTING` 是 `YeeZ-Privacy-Computing` 所在的路径。
+
+- `$MYSQL_URL`/`$MYSQL_USERNAME`/`$MYSQL_PASSWORD`/`$YPCD_DB` 需要用户替换为自己的值。
+
+- `$MYSQL_URL` 通常情况下指定为`127.0.0.1:3306`，`$YPCD_DB` 设置为 `ypcd`。
+
+- `$SUBMITTER_PASSWD` 为解密 `Keystore` 的密码，一般设置为 1234567890。
+
+- `$HOST` 代表以太坊网络名称，设置为 `ropsten`。
+
+- `$PROJECT_ID` 由 [Infura](https://infura.io/) 提供。可以在 [Infura](https://infura.io/) 注册一个账户，随后在账户中创建一个以太坊项目即可获得 `$PROJECT_ID`。
+
+- 执行 `daemon.py` 文件时确保 `python3` 环境已经安装 `hexbytes`、`ethereum` 和 `web3` 包。
+
+  
+
+  ​    经过上述步骤，数据提供方已经将自身数据成功注册到区块链中并开始监听数据使用方的分析请求，一旦监听到数据使用方的分析需求，监听进程便自动下载其分析程序并开始执行。
+
+   下面介绍数据使用方如何根据数据提供方的数据信息发起数据分析请求。
 
 
-    经过上述步骤，数据提供方已经将自身数据成功注册到区块链中并开始监听数据使用方的分析请求，一旦监听到数据使用方的分析需求，监听进程便自动下载其分析程序并开始执行。
+
+1. （数据使用方）生成自身的公私钥对，该步骤参考第 5 步骤。
+
+   
+
+2. （数据使用方）将公钥注册到 `CertifiedUsers` 智能合约中，参考第 6 步骤。
+
+   
+
+3. （数据使用方）数据使用方浏览发布在区块链上的数据集，看到 `iris data` 数据集的样本信息及其描述信息，于是编写 `K-Means` 算法对该数据集进行数据分析，最终生成分析程序 `iris_parser.signed.so` 并存储在  `YeeZ-Privacy-Computing/lib` 目录下。
+
+    数据使用方将该程序上传到一个服务器以便于数据提供方下载。例如，在本示例中，该分析程序位于 `https://download.yeez.tech/bin/iris_parser.signed.so`。
+
     
-    下面介绍数据使用方如何根据数据提供方的数据信息发起数据分析请求。
 
-
-
-
-12. （数据使用方）生成自身的公私钥对，该步骤参考第 5 步骤。
-
-
-
-13. （数据使用方）将公钥注册到 `CertifiedUsers` 智能合约中，参考第 6 步骤。
-
-
-
-14. （数据使用方）数据使用方浏览发布在区块链上的数据集，看到 `iris data` 数据集，想使用 `K-Means` 算法对该数据集进行数据分析。
-
-    数据使用方编写分析程序 `iris_parser.signed.so`， 将该程序上传到一个服务器以便于数据提供方下载。
-
-    例如，在本示例中，该分析程序位于 `https://download.yeez.tech/bin/iris_parser.signed.so`。
-
-
-
-15. （数据使用方）生成 `enclave_hash`，指令如下命令：
+4. （数据使用方）生成 `enclave_hash`，指令如下命令：
 
     ```shell
     $ cd YeeZ-Privacy-Computing/lib
     $ sgx_sign dump -enclave iris_parser.signed.so -dumpfile dump.out
     ```
 
-    执行成功后会生成 `dump.out` 文件，其中包含 `enclave_hash` 字段，该字段用于后续发起数据分析请求。
+执行成功后会生成 `dump.out` 文件，其中包含 `enclave_hash` 字段，该字段用于后续发起数据分析请求。
 
 
 
-16. （数据使用方）调用 `ProgramStore` 智能合约中的 `upload_program` 函数注册分析程序 `iris_parser.signed.so` 的相关信息。
+5. （数据使用方）调用 `ProgramStore` 智能合约中的 `upload_program` 函数注册分析程序 `iris_parser.signed.so` 的相关信息。
 
     `upload_program` 函数格式如下：
 
@@ -398,11 +426,10 @@ Fidelius 初始化步骤如下：
     - `enclave_hash` 来自前一步骤生成的 `dump.out` 文件中的 `enclave_hash` 字段。
 
     执行成功后，该交易日志中的 `Data` 字段中存在一个 `hash` 字段，数据使用方需要进行记录，将用于后续步骤。
-
-
-
-17. （数据使用方）在 `YeeZ-Privacy-Computing/toolkit/yprepare/sample.json` 文件中添加如下内容：
-
+    
+    
+    
+6. （数据使用方）在 `YeeZ-Privacy-Computing/toolkit/yprepare/sample.json` 文件中添加如下内容：
     ```json
     {
       "data": [
@@ -414,36 +441,26 @@ Fidelius 初始化步骤如下：
     }
     ```
 
-    - `$data_id` 是数据哈希。
+- `$data_id` 是数据哈希。
 
-    - `$CONSUMER_PKEY` 是数据使用方的公钥。
+- `$CONSUMER_PKEY` 是数据使用方的公钥。
 
 
 
-18. （数据使用方）生成调用 `YZDataRequest` 合约的参数（`encrypted-input`，`program-enclave-hash`），执行如下命令：
+7. （数据使用方）生成调用 `YZDataRequest` 合约的参数（`encrypted-input`，`program-enclave-hash`），执行如下命令：
 
     ```shell
     $ cd YeeZ-Privacy-Computing/bin
     $ ./yprepare --dhash=$data_id --use-pubkey=$PROVIDER_PKEY --use-param xxx --param-format text --use-enclave ../lib/iris_parser.signed.so --output params.json
     ```
 
-    - `$data_id` 是数据提供方 `iris data` 的数据哈希值，其值由数据提供方在步骤 7 生成。
-    - `$PROVIDER_PKEY` 是数据提供方的公钥。
-    - 其他参数无需修改。
+- `$data_id` 是数据提供方 `iris data` 的数据哈希值，其值由数据提供方在步骤 7 生成。
+- `$PROVIDER_PKEY` 是数据提供方的公钥。
+- 其他参数无需修改。
 
 
 
-19. 对配置文件 `$PATH_TO_YEEZ_PRIVACY_COMPUTING/toolkit/blockchain/ethereum/transaction/config/YZDataRequest.json` 中的 `$keystore_path`，`$sender` 和 `$contract_address` 进行修改。其中：
-
-    - `$keystore_path` 是在步骤 11 中由 `$SUBMITTER_PASSWD` 加密私钥得到的以太坊密钥库路径。
-
-    - `$sender` 设置为数据使用方的以太坊账户地址。
-
-    - `contract_address` 设置为 `YZDataRequest` 的合约地址，该合约由步骤 9 生成。
-
-
-
-20. （数据使用方）调用 `YZDataRequest` 智能合约中的 `request_data` 函数发起数据分析请求交易。
+8. （数据使用方）调用 `YZDataRequest` 智能合约中的 `request_data` 函数发起数据分析请求交易。
 
     `request_data` 函数格式如下：
 
@@ -451,15 +468,15 @@ Fidelius 初始化步骤如下：
     request_data(bytes secret, bytes input, bytes forward_sig, bytes32 program_hash, uint gas_price)
     ```
 
-    - 智能合约 `YZDataRequest` 由步骤 9 生成。
-    - `secret`/`input`/`forward_sig` 由步骤 18 中生成的文件 `params.json` 中的 `$encrypted-skey`/`encrypted-input`/`forward-sig` 指定。
-    - `program_hash` 由步骤 16 中的交易日志中 `Data` 的 `hash` 字段。
+- 智能合约 `YZDataRequest` 由步骤 9 生成。
+- `secret`/`input`/`forward_sig` 由步骤 18 中生成的文件 `params.json` 中的 `$encrypted-skey`/`encrypted-input`/`forward-sig` 指定。
+- `program_hash` 由步骤 16 中的交易日志中 `Data` 的 `hash` 字段。
 
 
 
-21. （数据使用方）解密结果。在数据提供方一侧，步骤 11 产生的请求数据，监听守护进程会监听到数据使用方发出的该交易，随后自动下载 `iris_parser.signed.so` 文件并运行数据分析程序。运行结束后，分析结果会被自动发送到智能合约 `YZDataRequest` 中。
+9. （数据使用方）解密结果。在数据提供方一侧，步骤 11 产生的请求数据，监听守护进程会监听到数据使用方发出的该交易，随后自动下载 `iris_parser.signed.so` 文件并运行数据分析程序。运行结束后，分析结果会被自动发送到智能合约 `YZDataRequest` 中。
 
-    数据使用方可以通过如下命令解密分析结果:
+   数据使用方可以通过如下命令解密分析结果:
 
     ```shell
     $ ./keymgr_tool --decrypt $encrypted-result --decrypt.private-key $CONSUMER_SEALED_KEY
