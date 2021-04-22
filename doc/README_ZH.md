@@ -476,7 +476,7 @@ Fidelius 初始化步骤如下：
     $ ./yprepare --dhash=$data_id --use-pubkey=$PROVIDER_PKEY --use-param xxx --param-format text --use-enclave ../lib/iris_parser.signed.so --output params.json
     ```
 
-- `$data_id` 是数据提供方 `iris data` 的数据哈希值，其值由数据提供方在步骤 7 生成。
+- `$data_id` 是数据提供方 `iris data` 的数据哈希值，由数据提供方在其对应的步骤 7 生成。
 - `$PROVIDER_PKEY` 是数据提供方的公钥。
 - 其他参数无需修改。
 
@@ -490,15 +490,14 @@ Fidelius 初始化步骤如下：
     request_data(bytes secret, bytes input, bytes forward_sig, bytes32 program_hash, uint gas_price)
     ```
 
-- 智能合约 `YZDataRequest` 由步骤 9 生成。
+- 智能合约 `YZDataRequest` 由步骤 数据提供方在其对应的步骤 9 生成。
 - `secret`/`input`/`forward_sig` 由步骤 7 中生成的文件 `params.json` 中的 `$encrypted-skey`/`encrypted-input`/`forward-sig` 指定。
 - `program_hash` 由步骤 5 中的交易日志中 `Data` 的 `hash` 字段。
 
+    数据提供方的监听守护进程会监听到数据使用方发出的该交易，随后自动下载 `iris_parser.signed.so` 文件并运行数据分析程序。
+    运行结束后，分析结果会被自动发送到智能合约 `YZDataRequest` 中。
 
-
-9. （数据使用方）解密结果。在数据提供方一侧，步骤 11 产生的请求数据，监听守护进程会监听到数据使用方发出的该交易，随后自动下载 `iris_parser.signed.so` 文件并运行数据分析程序。运行结束后，分析结果会被自动发送到智能合约 `YZDataRequest` 中。
-
-   数据使用方可以通过如下命令解密分析结果:
+9. （数据使用方）解密结果。数据使用方可以通过如下命令解密分析结果:
 
     ```shell
     $ ./keymgr_tool --decrypt $encrypted-result --decrypt.private-key $CONSUMER_SEALED_KEY
